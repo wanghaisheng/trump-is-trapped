@@ -1,0 +1,18 @@
+@import "nes-ui-react";
+
+#dotting-interaction-canvas {
+  cursor: var(--cursor-url) !important;
+}
+
+.game-container {
+  display: flex;
+  justify-content: start;
+}
+
+#phaser-game canvas {
+  margin-top: 0 !important;
+}
+
+.nes-ui-is-size-large {
+  padding: 8px 12px 8px 10px !important;
+}

@@ -1,0 +1,14 @@
+#root {
+  padding: 2rem;
+}
+
+.app-content {
+  display: flex;
+  gap: 40px;
+}
+
+.dotting-canvas {
+  width: 520px;
+  height: 520px;
+  margin-bottom: 40px;
+}
