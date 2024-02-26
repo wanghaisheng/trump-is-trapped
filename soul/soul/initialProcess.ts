@@ -59,7 +59,7 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
     description = visionResp.value;
   } else {
     log("getting description from perception");
-    description = invokingPerception?._metadata?.description ?? invokingPerception?.content;
+    description = (invokingPerception?._metadata?.description ?? invokingPerception?.content) as string;
   }
   if (!description) {
     throw new Error("No description found");
@@ -75,18 +75,20 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
     .withMemory([
       {
         role: ChatMessageRoleEnum.Assistant,
-        content: `Milton observed the room and noticed: ${roomDescription.current}`,
+        content: `Milton perceived about the room: ${roomDescription.current}`,
       },
       {
         role: ChatMessageRoleEnum.Assistant,
-        content: `Milton observed that the room has changed: ${description}`,
+        content: `Miltonn perceived about the room: ${description}`,
       },
     ])
-    .compute(internalMonologue("Milton thinks about what has changed in the room"), {
+    .compute(internalMonologue("Milton notices a new thing in the room"), {
       model: "quality",
     });
 
-  log("remembering change");
+  roomDescription.current = description;
+
+  log("noticed change: " + thoughtAboutChange);
   step = step.withMemory([
     {
       role: ChatMessageRoleEnum.Assistant,
