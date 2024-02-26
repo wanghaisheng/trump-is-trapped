@@ -16,7 +16,8 @@
     "phaser-jsx": "^0.4.0",
     "pixi.js": "^7.4.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "soul-engine": "^0.0.45"
   },
   "devDependencies": {
     "@types/react": "^18.2.56",

@@ -1,4 +1,4 @@
-import { Dotting, DottingRef, PixelModifyItem, useData, useDotting } from "dotting";
+import { Dotting, DottingRef, PixelModifyItem, useBrush, useData, useDotting } from "dotting";
 import { Button } from "nes-ui-react";
 import { useEffect, useRef } from "react";
 
@@ -12,6 +12,7 @@ export default function PixelEditor({
   isEditing: boolean;
 }) {
   const ref = useRef<DottingRef>(null);
+  const { changeBrushColor, brushColor } = useBrush(ref);
 
   const { setData } = useDotting(ref);
   const { dataArray } = useData(ref);
@@ -40,7 +41,8 @@ export default function PixelEditor({
 
       data.forEach((row) => {
         row.forEach((cell) => {
-          ctx.fillStyle = cell.color || "rgba(0, 0, 0, 0)";
+          const isWhite = cell.color.toLowerCase() === "#ffffff";
+          ctx.fillStyle = isWhite || !cell.color ? "rgba(0, 0, 0, 0)" : cell.color;
           ctx.fillRect(cell.columnIndex * pixelSize, cell.rowIndex * pixelSize, pixelSize, pixelSize);
         });
       });
@@ -73,6 +75,56 @@ export default function PixelEditor({
       <div className="dotting-canvas">
         <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
       </div>
+
+      <>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginTop: 10,
+            marginBottom: 3,
+          }}
+        >
+          <span style={{ fontSize: 13 }}>Brush Color</span>
+          <div
+            style={{
+              borderRadius: "50%",
+              width: 20,
+              height: 20,
+              marginLeft: 15,
+              backgroundColor: brushColor,
+            }}
+          ></div>
+        </div>
+        <div>
+          {[
+            "#FF0000",
+            "#0000FF",
+            "#00FF00",
+            "#FF00FF",
+            "#00FFFF",
+            "#FFFF00",
+            "#7c4700",
+            "#101010",
+            "#666666",
+            "#FFFFFF",
+          ].map((color) => (
+            <div
+              key={color}
+              onClick={changeBrushColor.bind(null, color)}
+              style={{
+                width: 25,
+                height: 25,
+                margin: 10,
+                border: "2px solid white",
+                backgroundColor: color,
+                display: "inline-block",
+              }}
+            />
+          ))}
+        </div>
+      </>
+
       <div
         style={{
           display: "flex",

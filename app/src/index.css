@@ -4,6 +4,10 @@
   cursor: var(--cursor-url) !important;
 }
 
+#phaser-game canvas {
+  cursor: var(--cursor-click-url) !important;
+}
+
 .game-container {
   display: flex;
   justify-content: start;

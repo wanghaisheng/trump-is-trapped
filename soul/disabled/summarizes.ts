@@ -1,6 +1,6 @@
 import { ChatMessageRoleEnum, CortexStep, internalMonologue } from "socialagi";
 import { MentalProcess, useActions, useProcessMemory } from "soul-engine";
-import { prompt } from "../lib/prompt.js";
+import { prompt } from "../soul/lib/prompt.js";
 
 const conversationNotes = (existing: string) => () => ({
   command: ({ entityName: name }: CortexStep) => {

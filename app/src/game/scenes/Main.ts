@@ -64,17 +64,50 @@ export default class Main extends Phaser.Scene {
       });
     });
 
+    // this.events.on("player-says", (message: string) => {
+    //   if (this.lastMessage === message) {
+    //     return;
+    //   }
+
+    //   if (this.currentText) {
+    //     this.currentText.destroy();
+    //     this.currentText = null;
+    //   }
+
+    //   this.lastMessage = message;
+
+    //   const fontFamily = '"Press Start 2P", monospace';
+    //   const playerY = this.player.y;
+    //   const textX = 10;
+    //   const textY = playerY - 50;
+    //   this.currentText = this.add.text(textX, textY, message, {
+    //     fontFamily,
+    //     fontSize: "8px",
+    //     color: "#000",
+    //     padding: {
+    //       left: 10,
+    //       right: 10,
+    //       top: 10,
+    //       bottom: 10,
+    //     },
+    //   });
+    // });
+
     this.textures.on("addtexture", (textureKey: string) => {
       console.log(`Texture added with key: ${textureKey}, now creating sprite.`);
-      // Create the sprite now that the texture is available
-      const dynamicImage = this.physics.add.image(this.player.x, this.player.y, textureKey);
+      const x = this.selectedTile?.x || this.player.x;
+      const y = this.selectedTile?.y || this.player.y;
+      const dynamicImage = this.physics.add.image(x, y, textureKey);
       this.physics.add.collider(dynamicImage, this.platforms);
 
       if (dynamicImage) {
-        console.log(`Sprite created successfully with key: ${key}`, dynamicImage);
+        console.log(`Sprite created successfully with key: ${textureKey}`, dynamicImage);
       } else {
-        console.log(`Failed to create sprite with key: ${key}`);
+        console.log(`Failed to create sprite with key: ${textureKey}`);
       }
+
+      this.resetTileHighlights();
+      this.selectedTile = null;
     });
 
     this.createTiles();
@@ -99,21 +132,23 @@ export default class Main extends Phaser.Scene {
           )
           .setInteractive();
 
-        tile.on("pointerover", () => {
-          if (this.selectedTile) {
-            return;
-          }
+        // tile.on("pointerover", () => {
+        //   if (this.selectedTile) {
+        //     return;
+        //   }
 
-          tile.setFillStyle(0xffffff, 0.2);
-        });
+        //   tile.setFillStyle(0xffffff, 0.2);
+        // });
 
-        tile.on("pointerout", () => {
-          if (this.selectedTile !== tile) {
-            tile.setFillStyle(0xffffff, 0);
-          }
-        });
+        // tile.on("pointerout", () => {
+        //   if (this.selectedTile !== tile) {
+        //     tile.setFillStyle(0xffffff, 0);
+        //   }
+        // });
 
         tile.on("pointerdown", () => {
+          this.resetTileHighlights();
+
           const onTileClick = this.game.registry.get("onTileClick");
           if (onTileClick) {
             onTileClick(x, y); // Invoke the callback with the tile coordinates
@@ -139,15 +174,63 @@ export default class Main extends Phaser.Scene {
     // Create a new Image object
     const image = new Image();
     image.onload = () => {
+      const selected = this.selectedTile;
+      const x = selected?.x;
+
+      if (x) {
+        setTimeout(() => {
+          if (x < this.player.x) {
+            this.player.setTexture("player", "player-walk-west.000");
+          } else {
+            this.player.setTexture("player", "player-walk-east.000");
+          }
+
+          setTimeout(() => {
+            this.player.setTexture("player", "player-idle-south.000");
+          }, 3000);
+        }, 500);
+      }
+
       console.log(`Image loaded, adding to textures with key: ${key}`);
       // Add the image as a base64 texture
       this.textures.addImage(key, image);
-      this.add.sprite(400, 300, key);
+      // const x = this.selectedTile?.x || this.player.x;
+      // const y = this.selectedTile?.y || this.player.y;
+      // this.add.sprite(x, y, key);
+
+      setTimeout(() => {
+        const base64Image = this.exportCanvasAsBase64();
+        const onCanvasUpdate = this.game.registry.get("onCanvasUpdate");
+        if (onCanvasUpdate) {
+          console.log("onCanvasUpdate");
+          onCanvasUpdate(base64Image);
+        }
+      }, 500);
     };
     image.onerror = (error) => {
       console.error(`Error loading image with key: ${key}`, error);
     };
     // Set the source of the image object to trigger the loading process
     image.src = base64;
+  }
+
+  resetTileHighlights() {
+    this.selectedTile?.setFillStyle(0xffffff, 0);
+    this.selectedTile = null;
+    this.tiles.forEach((tile) => {
+      if (tile !== this.selectedTile) {
+        tile.setFillStyle(0xffffff, 0);
+      }
+    });
+  }
+
+  exportCanvasAsBase64() {
+    // Assuming 'this' is a reference to your Phaser scene
+    const canvas = this.game.canvas;
+
+    // Convert the canvas content to a base64 string (PNG format by default)
+    const base64Image = canvas.toDataURL();
+
+    return base64Image;
   }
 }

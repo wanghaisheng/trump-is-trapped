@@ -1,106 +1,213 @@
-import { CortexStep, decision, externalDialog } from "socialagi";
-import { MentalProcess, useActions, usePerceptions, useSoulMemory } from "soul-engine";
+import { ChatMessageRoleEnum, CortexStep, decision, externalDialog, instruction, internalMonologue } from "socialagi";
+import {
+  MentalProcess,
+  useActions,
+  usePerceptions,
+  useProcessManager,
+  useProcessMemory,
+  useSoulMemory,
+} from "soul-engine";
 import { Perception } from "soul-engine/soul";
-import { DiscordEventData } from "../discord/soulGateway.js";
-import { getMetadataFromPerception, getUserDataFromDiscordEvent, newMemory } from "./lib/utils.js";
+import { prompt } from "./lib/prompt.js";
 
 const initialProcess: MentalProcess = async ({ step: initialStep }) => {
-  const { log, dispatch } = useActions();
   const { invokingPerception, pendingPerceptions } = usePerceptions();
-  const { userName, discordEvent } = getMetadataFromPerception(invokingPerception);
-
-  const hasReachedPendingPerceptionsLimit = pendingPerceptions.current.length > 10;
-  if (hasReachedPendingPerceptionsLimit) {
-    log("Pending perceptions limit reached. Skipping perception.");
-    return initialStep;
-  }
-
-  const isMessageBurst = hasMoreMessagesFromSameUser(pendingPerceptions.current, userName);
-  if (isMessageBurst) {
-    log(`Skipping perception from ${userName} because it's part of a message burst`);
-    return initialStep;
-  }
-
-  let step = rememberUser(initialStep, discordEvent);
-
-  const interlocutor = await step.compute(
-    decision(
-      `Schmoozie is the moderator of this channel. Participants sometimes talk to Schmoozie, and sometimes between themselves. In this last message sent by ${userName}, guess which person they are probably speaking with.`,
-      ["schmoozie, for sure", "schmoozie, possibly", "someone else", "not sure"]
-    ),
-    {
-      model: "quality",
-    }
+  const { speak, log, dispatch } = useActions();
+  log("starting");
+  const roomDescription = useSoulMemory(
+    "roomDescription",
+    "- The human is positioned in the center of the image, facing downward."
   );
 
-  log(`Schmoozie thinks ${userName} is talking to: ${interlocutor}`);
+  log("getting description");
+  let description;
+  if (invokingPerception?.action === "addObject") {
+    log("getting description from vision");
+    const content = invokingPerception?._metadata?.image?.toString();
+    log(content?.slice(0, 30));
 
-  const isUserTalkingToSchmoozie = interlocutor.toString().startsWith("schmoozie");
-  if (!isUserTalkingToSchmoozie) {
-    log(`Ignoring message from ${userName} because they're not talking to Schmoozie`);
-    return initialStep;
+    // @ts-expect-error wip
+    const visionStep = await initialStep.withUpdatedMemory((existing) => {
+      return [
+        existing.flat()[0],
+        {
+          role: ChatMessageRoleEnum.User,
+          content: [
+            {
+              type: "image_url",
+              image_url: {
+                url: content,
+              },
+            },
+          ],
+        },
+      ];
+    });
+
+    const visionResp = await visionStep.next(
+      instruction(prompt`
+    describe this pixel art image.
+    - don't say it's pixel art
+    - ignore the gray floor and the beige wall
+    - ignore shadows
+    - there's a human in the image, just say where he is, don't describe him. refer to him like this "the human is..."
+    - use bulleted list, one item per object 
+  `),
+      { model: "vision" }
+    );
+    log(visionResp.value);
+    description = visionResp.value;
+  } else {
+    log("getting description from perception");
+    description = invokingPerception?._metadata?.description ?? invokingPerception?.content;
+  }
+  if (!description) {
+    throw new Error("No description found");
   }
 
-  const userSentNewMessagesInMeantime = hasMoreMessagesFromSameUser(pendingPerceptions.current, userName);
-  if (userSentNewMessagesInMeantime) {
-    log(`Aborting response to ${userName} because they've sent more messages in the meantime`);
-    return initialStep;
-  }
-
-  log(`Answering message from ${userName}`);
-  const { stream, nextStep } = await step.next(externalDialog(`Schmoozie answers ${userName}'s message`), {
-    stream: true,
-    model: "quality",
+  let step = await initialStep.withUpdatedMemory(async (memories) => {
+    const newMemories = memories.flat();
+    return newMemories.slice(0, newMemories.length - 1);
   });
 
-  dispatch({
-    action: "says",
-    content: stream,
-    _metadata: {
-      discordEvent,
+  log("thinking about change");
+  const thoughtAboutChange = await step
+    .withMemory([
+      {
+        role: ChatMessageRoleEnum.Assistant,
+        content: `Milton observed the room and noticed: ${roomDescription.current}`,
+      },
+      {
+        role: ChatMessageRoleEnum.Assistant,
+        content: `Milton observed that the room has changed: ${description}`,
+      },
+    ])
+    .compute(internalMonologue("Milton thinks about what has changed in the room"), {
+      model: "quality",
+    });
+
+  log("remembering change");
+  step = step.withMemory([
+    {
+      role: ChatMessageRoleEnum.Assistant,
+      content: `Milton noticed: ${thoughtAboutChange}`,
     },
-  });
+  ]);
 
-  return await nextStep;
+  log("thinking about what happened");
+  step = await step.next(
+    internalMonologue("Milton thinks about his situation and about what just happened in the room")
+  );
+
+  await multiSpeak(step, pendingPerceptions.current);
+
+  // log("talking to person");
+  // const { nextStep, stream } = await step.next(externalDialog("Milton talks to the person who changed the room"), {
+  //   stream: true,
+  // });
+
+  // speak(stream);
+
+  // log("waiting for response");
+  // step = await nextStep;
+
+  return step;
 };
 
-function hasMoreMessagesFromSameUser(pendingPerceptions: Perception[], userName: string) {
-  const countOfPendingPerceptionsBySamePerson = pendingPerceptions.filter((perception) => {
-    return getMetadataFromPerception(perception)?.userName === userName;
-  }).length;
+const multiSpeak = async (initialStep: CortexStep, pendingPerceptions: Perception[]) => {
+  const { speak, scheduleEvent, log } = useActions();
+  const fragmentNo = useProcessMemory(0);
+  const { wait } = useProcessManager();
 
-  return countOfPendingPerceptionsBySamePerson > 0;
-}
+  let step = await initialStep.next(
+    externalDialog(
+      "Milton shares a thought fragment, hinting at a larger conversation to unfold. WITHOUT USING ELLIPSES."
+    ),
+    { model: "quality" }
+  );
+  if (pendingPerceptions.length > 0) {
+    return initialStep;
+  }
+  speak(step.value);
 
-function rememberUser(step: CortexStep<any>, discordEvent: DiscordEventData | undefined) {
-  const { log } = useActions();
-  const { userName, userDisplayName } = getUserDataFromDiscordEvent(discordEvent);
+  let count = parseInt(
+    (await step.compute(
+      decision(
+        prompt`
+      How many additional conversational pieces will Milton want to express next?
+      Vary the number of pieces for a natural flow.
+      The last conversation involved ${fragmentNo.current} pieces.
+      Typically, expect 0. Occasionally, 1 or perhaps 2-5 pieces.
+    `,
+        ["5", "4", "3", "2", "1", "0"]
+      ),
+      { model: "quality" }
+    )) as string
+  ) as number;
+  fragmentNo.current = count;
 
-  const userModel = useSoulMemory(userName, `- Display name: "${userDisplayName}"`);
-  const userLastMessage = useSoulMemory(userName + "-lastMessage", "");
-
-  let remembered = "";
-
-  if (userModel.current) {
-    remembered += userModel.current;
+  if (count === 0) {
+    return step;
   }
 
-  if (userLastMessage.current) {
-    remembered += `\n\nThe last message Schmoozie sent to ${userName} was:\n- ${userLastMessage.current}`;
+  let waitTime = 1000;
+  while (count > 1) {
+    await wait(waitTime);
+    let length = await step.compute(
+      decision(
+        prompt`
+        How long should the next conversational piece be?
+      `,
+        ["very long", "long", "medium", "short"]
+      ),
+      { model: "quality" }
+    );
+
+    waitTime = length === "very long" ? 6000 : length === "long" ? 4000 : length === "medium" ? 2000 : 1000;
+    log(`waiting for ${waitTime}ms`);
+
+    const words = (length === "very long" ? 60 : length === "long" ? 40 : length === "medium" ? 20 : 10) + " words ";
+
+    count -= 1;
+    const preStep = step;
+    step = await step.next(
+      externalDialog(prompt`
+        - Milton shares another thought fragment, building on the previous one. WITHOUT USING ELLIPSES.
+        - Ensure this piece is ${words} in length
+        - Their last shared thought was: "${step.value}"
+      `),
+      { model: "quality" }
+    );
+    if (pendingPerceptions.length > 0) {
+      return preStep;
+    }
+    speak(step.value);
   }
 
-  remembered = remembered.trim();
-
-  if (remembered.length > 0) {
-    log(`Remembered this about ${userName}:\n${remembered}`);
-
-    remembered = `Schmoozie remembers this about ${userName}:\n${remembered.trim()}`;
-    step = step.withMemory(newMemory(remembered));
-  } else {
-    log(`No memory about ${userName}`);
+  const text = await step.compute(
+    decision(
+      prompt`
+      Does Milton need to add another piece to conclude their last thought?
+    `,
+      ["yes", "no"]
+    ),
+    { model: "quality" }
+  );
+  if (text === "yes") {
+    const preStep = step;
+    step = await step.next(
+      externalDialog(prompt`
+        - Milton needs to conclude their last thought fragment in this conversation
+      `),
+      { model: "quality" }
+    );
+    if (pendingPerceptions.length > 0) {
+      return preStep;
+    }
+    speak(step.value);
   }
 
   return step;
-}
+};
 
 export default initialProcess;
