@@ -7,8 +7,12 @@
   gap: 40px;
 }
 
+.dotting-container {
+  margin-bottom: 20px;
+}
+
 .dotting-canvas {
   width: 520px;
   height: 520px;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }

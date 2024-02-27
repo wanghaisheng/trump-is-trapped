@@ -1,15 +1,15 @@
 import { ChatMessageRoleEnum, CortexStep, internalMonologue } from "socialagi";
 import { MentalProcess, useActions, useProcessMemory } from "soul-engine";
-import { prompt } from "../soul/lib/prompt.js";
+import { prompt } from "../lib/prompt.js";
 
-const conversationNotes = (existing: string) => () => ({
+const summaryOfSeriesOfEvents = (existing: string) => () => ({
   command: ({ entityName: name }: CortexStep) => {
     return prompt`
       ## Existing notes
       ${existing}
 
       ## Description
-      Write an updated and clear paragraph describing the conversation so far.
+      Write an updated and clear paragraph describing everything that happened so far.
       Make sure to keep details that ${name} would want to remember.
 
       ## Rules
@@ -18,14 +18,14 @@ const conversationNotes = (existing: string) => () => ({
       * Use abbreviated language to keep the notes short
       * Make sure to detail the motivation of ${name} (what are they trying to accomplish, what have they done so far).
 
-      Please reply with the updated notes on the conversation:'
+      Please reply with the updated notes on the series of events:
   `;
   },
 });
 
-const summarizesConversation: MentalProcess = async ({ step: initialStep }) => {
-  const conversationModel = useProcessMemory(prompt`
-    ${initialStep.entityName} is talking to one or more people and trying to learn as much as possible about them.
+const summarizesSeriesOfEvents: MentalProcess = async ({ step: initialStep }) => {
+  const seriesOfEventsModel = useProcessMemory(prompt`
+    ${initialStep.entityName} is experiencing a series of events and is trying to learn as much as possible about them.
   `);
   const { log: engineLog } = useActions();
   const log = (...args: any[]) => {
@@ -35,12 +35,12 @@ const summarizesConversation: MentalProcess = async ({ step: initialStep }) => {
   let step = initialStep;
   let finalStep = initialStep;
 
-  if (step.memories.length > 15) {
-    log("Updating conversation notes");
-    step = await step.next(internalMonologue("What have I learned in this conversation.", "noted"));
+  if (step.memories.length > 10) {
+    log("Updating notes");
+    step = await step.next(internalMonologue("What have I learned so far.", "noted"));
 
-    const updatedNotes = await step.compute(conversationNotes(conversationModel.current));
-    conversationModel.current = updatedNotes as string;
+    const updatedNotes = await step.compute(summaryOfSeriesOfEvents(seriesOfEventsModel.current));
+    seriesOfEventsModel.current = updatedNotes as string;
 
     return finalStep.withUpdatedMemory(async (memories) => {
       const newMemories = memories.flat();
@@ -49,7 +49,7 @@ const summarizesConversation: MentalProcess = async ({ step: initialStep }) => {
         {
           role: ChatMessageRoleEnum.Assistant,
           content: prompt`
-            ## Conversation so far
+            ## Events so far
             ${updatedNotes}
           `,
           metadata: {
@@ -64,4 +64,4 @@ const summarizesConversation: MentalProcess = async ({ step: initialStep }) => {
   return finalStep;
 };
 
-export default summarizesConversation;
+export default summarizesSeriesOfEvents;

@@ -72,58 +72,67 @@ export default function PixelEditor({
         visibility: isEditing ? "visible" : "hidden",
       }}
     >
-      <div className="dotting-canvas">
-        <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
-      </div>
+      <div className="dotting-container">
+        <div className="dotting-canvas">
+          <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
+        </div>
 
-      <>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginTop: 10,
-            marginBottom: 3,
-          }}
-        >
-          <span style={{ fontSize: 13 }}>Brush Color</span>
+        <>
           <div
             style={{
-              borderRadius: "50%",
-              width: 20,
-              height: 20,
-              marginLeft: 15,
-              backgroundColor: brushColor,
+              display: "flex",
+              alignItems: "center",
+              marginTop: 10,
+              marginBottom: 3,
             }}
-          ></div>
-        </div>
-        <div>
-          {[
-            "#FF0000",
-            "#0000FF",
-            "#00FF00",
-            "#FF00FF",
-            "#00FFFF",
-            "#FFFF00",
-            "#7c4700",
-            "#101010",
-            "#666666",
-            "#FFFFFF",
-          ].map((color) => (
-            <div
-              key={color}
-              onClick={changeBrushColor.bind(null, color)}
-              style={{
-                width: 25,
-                height: 25,
-                margin: 10,
-                border: "2px solid white",
-                backgroundColor: color,
-                display: "inline-block",
-              }}
-            />
-          ))}
-        </div>
-      </>
+          >
+            <span style={{ fontSize: 13, paddingBottom: 5 }}>Brush Color</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+            }}
+          >
+            {[
+              "#FF0000",
+              "#0000FF",
+              "#00FF00",
+              "#FF00FF",
+              "#00FFFF",
+              "#FFFF00",
+              "#7c4700",
+              "#101010",
+              "#666666",
+              "#FFFFFF",
+            ].map((color) => (
+              <div
+                key={color}
+                style={{
+                  flexShrink: 0,
+                  display: "inline-block",
+                  padding: 3,
+                  paddingBottom: 1,
+                  border: brushColor === color ? "2px solid white" : "2px solid black",
+                }}
+              >
+                <div
+                  onClick={changeBrushColor.bind(null, color)}
+                  style={{
+                    width: 25,
+                    height: 25,
+                    border: "2px solid white",
+                    backgroundColor: color,
+                    cursor: "var(--cursor-click-url),pointer",
+                    display: "inline-block",
+                    lineHeight: "20px",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      </div>
 
       <div
         style={{

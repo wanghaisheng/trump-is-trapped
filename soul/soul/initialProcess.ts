@@ -1,4 +1,12 @@
-import { ChatMessageRoleEnum, CortexStep, decision, externalDialog, instruction, internalMonologue } from "socialagi";
+import {
+  ChatMessageRoleEnum,
+  CortexStep,
+  brainstorm,
+  decision,
+  externalDialog,
+  instruction,
+  internalMonologue,
+} from "socialagi";
 import {
   MentalProcess,
   useActions,
@@ -71,20 +79,28 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
   });
 
   log("thinking about change");
-  const thoughtAboutChange = await step
-    .withMemory([
-      {
-        role: ChatMessageRoleEnum.Assistant,
-        content: `Milton perceived about the room: ${roomDescription.current}`,
-      },
-      {
-        role: ChatMessageRoleEnum.Assistant,
-        content: `Miltonn perceived about the room: ${description}`,
-      },
-    ])
-    .compute(internalMonologue("Milton notices a new thing in the room"), {
+  const memoriesForDiff = [
+    {
+      role: ChatMessageRoleEnum.Assistant,
+      content: `Room before change: ${roomDescription.current}`,
+    },
+    {
+      role: ChatMessageRoleEnum.Assistant,
+      content: `Room after change: ${description}`,
+    },
+  ];
+
+  let computeStep = await step.withUpdatedMemory(async (memories) => {
+    return memories.concat(memoriesForDiff);
+  });
+  log("computeStep: ", JSON.stringify(computeStep.memories.slice(-2)));
+
+  const thoughtAboutChange = await computeStep.compute(
+    brainstorm("Name the one thing that changed in the room. Don't reflect about it, just observe what changed."),
+    {
       model: "quality",
-    });
+    }
+  );
 
   roomDescription.current = description;
 
@@ -98,21 +114,16 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
 
   log("thinking about what happened");
   step = await step.next(
-    internalMonologue("Milton thinks about his situation and about what just happened in the room")
+    internalMonologue("Milton thinks about his situation and about what just happened in the room"),
+    {
+      model: "quality",
+    }
   );
 
-  await multiSpeak(step, pendingPerceptions.current);
+  log("speaking");
+  step = await multiSpeak(step, pendingPerceptions.current);
 
-  // log("talking to person");
-  // const { nextStep, stream } = await step.next(externalDialog("Milton talks to the person who changed the room"), {
-  //   stream: true,
-  // });
-
-  // speak(stream);
-
-  // log("waiting for response");
-  // step = await nextStep;
-
+  log("done");
   return step;
 };
 
@@ -128,6 +139,7 @@ const multiSpeak = async (initialStep: CortexStep, pendingPerceptions: Perceptio
     { model: "quality" }
   );
   if (pendingPerceptions.length > 0) {
+    log("aborting because of pending perceptions");
     return initialStep;
   }
   speak(step.value);
@@ -181,6 +193,7 @@ const multiSpeak = async (initialStep: CortexStep, pendingPerceptions: Perceptio
       { model: "quality" }
     );
     if (pendingPerceptions.length > 0) {
+      log("aborting because of pending perceptions");
       return preStep;
     }
     speak(step.value);
@@ -204,6 +217,7 @@ const multiSpeak = async (initialStep: CortexStep, pendingPerceptions: Perceptio
       { model: "quality" }
     );
     if (pendingPerceptions.length > 0) {
+      log("aborting because of pending perceptions");
       return preStep;
     }
     speak(step.value);

@@ -93,6 +93,7 @@ function App() {
 
   return (
     <>
+      <Text size="large">Milton is trapped in a room</Text>
       <div className="app-content">
         <GameContainer onTileClick={handleTileClick} onCanvasUpdate={handleCanvasUpdate} />
         <UiContainer tileBeingEdited={tileBeingEdited} onCancel={handleCancel} />
