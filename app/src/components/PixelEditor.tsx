@@ -1,6 +1,16 @@
-import { Dotting, DottingRef, PixelModifyItem, useBrush, useData, useDotting } from "dotting";
+import {
+  BrushTool,
+  Dotting,
+  DottingRef,
+  PixelModifyItem,
+  useBrush,
+  useData,
+  useDotting,
+} from "dotting-temp-fix-dooart";
 import { Button } from "nes-ui-react";
 import { useEffect, useRef } from "react";
+import bucket from "./bucket.png";
+import pencil from "./pencil.png";
 
 export default function PixelEditor({
   onAddObject,
@@ -12,7 +22,7 @@ export default function PixelEditor({
   isEditing: boolean;
 }) {
   const ref = useRef<DottingRef>(null);
-  const { changeBrushColor, brushColor } = useBrush(ref);
+  const { changeBrushColor, brushColor, changeBrushTool, brushTool } = useBrush(ref);
 
   const { setData } = useDotting(ref);
   const { dataArray } = useData(ref);
@@ -77,21 +87,52 @@ export default function PixelEditor({
           <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
         </div>
 
-        <>
+        <div
+          style={{
+            backgroundColor: "#999999",
+            // padding: 8,
+            // paddingRight: 16,
+            padding: "8px 16px 8px 8px",
+            display: "flex",
+            width: "100%",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              marginTop: 10,
-              marginBottom: 3,
+              gap: 8,
             }}
           >
-            <span style={{ fontSize: 13, paddingBottom: 5 }}>Brush Color</span>
+            <div
+              style={{
+                border: brushTool === BrushTool.DOT ? "2px solid white" : "2px solid transparent",
+                padding: "2px",
+              }}
+              onClick={() => {
+                changeBrushTool(BrushTool.DOT);
+              }}
+            >
+              <img src={pencil} alt="pencil" style={{ width: "48px", height: "48px" }} />
+            </div>
+            <div
+              style={{
+                border: brushTool === BrushTool.PAINT_BUCKET ? "2px solid white" : "2px solid transparent",
+                padding: "2px",
+              }}
+              onClick={() => {
+                changeBrushTool(BrushTool.PAINT_BUCKET);
+              }}
+            >
+              <img src={bucket} alt="bucket" style={{ width: "48px", height: "48px" }} />
+            </div>
           </div>
+
           <div
             style={{
               display: "flex",
-              gap: 10,
+              gap: 1,
             }}
           >
             {[
@@ -111,9 +152,11 @@ export default function PixelEditor({
                 style={{
                   flexShrink: 0,
                   display: "inline-block",
+                  width: 35,
+                  height: 35,
                   padding: 3,
                   paddingBottom: 1,
-                  border: brushColor === color ? "2px solid white" : "2px solid black",
+                  border: brushColor === color ? "2px solid white" : "2px solid transparent",
                 }}
               >
                 <div
@@ -131,7 +174,7 @@ export default function PixelEditor({
               </div>
             ))}
           </div>
-        </>
+        </div>
       </div>
 
       <div

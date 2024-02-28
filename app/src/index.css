@@ -1,5 +1,10 @@
 @import "nes-ui-react";
 
+html.nes-ui.nes-ui-dark-mode,
+html.nes-ui.nes-ui-dark-mode body {
+  background-color: var(--color-black) !important;
+}
+
 #dotting-interaction-canvas {
   cursor: var(--cursor-url) !important;
 }

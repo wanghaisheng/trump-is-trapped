@@ -32,7 +32,7 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
   if (invokingPerception?.action === "addObject") {
     log("getting description from vision");
     const content = invokingPerception?._metadata?.image?.toString();
-    log(content?.slice(0, 30));
+    log(content?.slice(0, 30) + "... (" + content?.length + " more)");
 
     // @ts-expect-error wip
     const visionStep = await initialStep.withUpdatedMemory((existing) => {

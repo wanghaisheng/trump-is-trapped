@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "moduleResolution": "Node16"
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "soul/**/*", "app/**/*", "soul/subprocesses/summarizes.ts"],
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "soul/**/*", "app/**/*"],
   "exclude": ["node_modules", "soul/default.env.ts"],
   "watchOptions": {
     "excludeFiles": ["soul/default.env.ts"]
