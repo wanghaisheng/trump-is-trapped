@@ -22,9 +22,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   // @ts-expect-error wip
   body!: Phaser.Physics.Arcade.Body;
   cursors: Cursors;
+  originalPosition: { x: number; y: number } = { x: 0, y: 0 };
+  isReturning = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture = key.atlas.player, frame = "player-idle-south.000") {
     super(scene, x, y, texture, frame);
+
+    this.originalPosition.x = x;
+    this.originalPosition.y = y;
 
     // Add the sprite to the scene
     scene.add.existing(this);
@@ -130,8 +135,66 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  jumpAwayFrom(object: Phaser.GameObjects.Rectangle) {
+    const x = object.x;
+
+    setTimeout(() => {
+      const directionMultiplier = x < this.x ? 1 : -1;
+      const jumpDistanceX = 80;
+      const jumpHeightY = -20;
+
+      if (directionMultiplier === 1) {
+        this.setTexture("player", "player-walk-west.000");
+      } else {
+        this.setTexture("player", "player-walk-east.000");
+      }
+
+      this.scene.tweens.add({
+        targets: this,
+        x: { value: `+=${jumpDistanceX * directionMultiplier}`, duration: 500, ease: "Power1" },
+        y: { value: `+=${jumpHeightY}`, duration: 250, ease: "Power2", yoyo: true, hold: 0 },
+        onComplete: () => {
+          setTimeout(() => {
+            this.setTexture("player", "player-walk-south.000");
+            this.onFinishJump();
+          }, 1000);
+        },
+      });
+    }, 500);
+  }
+
+  onFinishJump() {
+    setTimeout(() => {
+      this.returnToCenter();
+    }, 2000);
+  }
+
+  returnToCenter() {
+    this.isReturning = true; // Set the flag to true when starting to return
+
+    this.scene.tweens.add({
+      targets: this,
+      x: { value: this.originalPosition.x, duration: 3000, ease: "Power1" },
+      onComplete: () => {
+        this.isReturning = false; // Reset the flag once the movement is complete
+        // Stop any animations and set to idle
+        this.anims.stop();
+        const idleFrame = "player-idle-south.000";
+        this.setTexture(key.atlas.player, idleFrame);
+      },
+    });
+  }
+
   update() {
     const { anims, body, cursors } = this;
+
+    if (this.isReturning) {
+      const directionX = this.originalPosition.x - this.x;
+      const animationKey = directionX > 0 ? Animation.Right : Animation.Left;
+      this.anims.play(animationKey, true);
+      return;
+    }
+
     const prevVelocity = body.velocity.clone();
 
     // Stop any previous movement from the last frame

@@ -32,6 +32,11 @@
     <object id="1" x="0" y="0" width="32" height="32"/>
    </objectgroup>
   </tile>
+  <tile id="326">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
   <tile id="327">
    <properties>
     <property name="collides" type="bool" value="true"/>
@@ -55,6 +60,21 @@
    <objectgroup draworder="index" id="2">
     <object id="1" x="0" y="0" width="32" height="32"/>
    </objectgroup>
+  </tile>
+  <tile id="330">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="331">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="332">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
   </tile>
   <tile id="340">
    <properties>
@@ -83,9 +103,27 @@
    </objectgroup>
   </tile>
   <tile id="343">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
    <objectgroup draworder="index" id="2">
     <object id="1" x="0" y="0" width="32" height="32"/>
    </objectgroup>
+  </tile>
+  <tile id="347">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="348">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="349">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
   </tile>
  </tileset>
  <tileset firstgid="392" name="interiors" tilewidth="32" tileheight="32" tilecount="1424" columns="16">

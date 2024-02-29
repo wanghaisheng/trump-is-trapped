@@ -174,21 +174,8 @@ export default class Main extends Phaser.Scene {
     // Create a new Image object
     const image = new Image();
     image.onload = () => {
-      const selected = this.selectedTile;
-      const x = selected?.x;
-
-      if (x) {
-        setTimeout(() => {
-          if (x < this.player.x) {
-            this.player.setTexture("player", "player-walk-west.000");
-          } else {
-            this.player.setTexture("player", "player-walk-east.000");
-          }
-
-          setTimeout(() => {
-            this.player.setTexture("player", "player-idle-south.000");
-          }, 3000);
-        }, 500);
+      if (this.selectedTile) {
+        this.player.jumpAwayFrom(this.selectedTile);
       }
 
       console.log(`Image loaded, adding to textures with key: ${key}`);

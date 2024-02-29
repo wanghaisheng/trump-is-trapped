@@ -21,7 +21,13 @@ import { prompt } from "./lib/prompt.js";
 const initialProcess: MentalProcess = async ({ step: initialStep }) => {
   const { invokingPerception, pendingPerceptions } = usePerceptions();
   const { speak, log, dispatch } = useActions();
+
   log("starting");
+  if (pendingPerceptions.current.length > 0) {
+    log("aborting because of pending perceptions");
+    return initialStep;
+  }
+
   const roomDescription = useSoulMemory(
     "roomDescription",
     "- The human is positioned in the center of the image, facing downward."
@@ -32,7 +38,7 @@ const initialProcess: MentalProcess = async ({ step: initialStep }) => {
   if (invokingPerception?.action === "addObject") {
     log("getting description from vision");
     const content = invokingPerception?._metadata?.image?.toString();
-    log(content?.slice(0, 30) + "... (" + content?.length + " more)");
+    log(content?.slice(0, 30) + "... (" + content?.length + " bytes)");
 
     // @ts-expect-error wip
     const visionStep = await initialStep.withUpdatedMemory((existing) => {
