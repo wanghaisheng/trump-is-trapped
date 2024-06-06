@@ -1,6 +1,6 @@
 import { Soul } from "@opensouls/engine";
 import { Text } from "nes-ui-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import tokens from "./.tokens.json";
 import "./App.css";
 import PixelEditor from "./components/PixelEditor";
@@ -9,7 +9,7 @@ import GameContainer from "./game/GameContainer";
 function App() {
   const [tileBeingEdited, setTileBeingEdited] = useState<{ x: number; y: number } | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
-  // const [message, setMessage] = useState<string | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   const [soul, setSoul] = useState<Soul | null>(null);
 
@@ -20,22 +20,17 @@ function App() {
 
     const connectSoul = async () => {
       const soul = new Soul({
-        organization: "dooart",
+        organization: tokens.soulEngineOrganization,
         blueprint: "milton",
-        soulId: tokens.soulId,
-        // local: true,
+        soulId: "dev-001",
         token: tokens.soulEngineApiKey,
-        debug: true,
-        local: tokens.soulLocal === "true",
+        debug: tokens.soulEngineDebug === "true",
       });
 
       await soul.connect();
 
       soul.on("says", async (event) => {
         const content = await event.content();
-        // console.log(123123, content);
-        // emitGameEvent("player-says", content);
-        // setMessage(content);
 
         setMessages((messages) => {
           if (!messages) {
@@ -45,6 +40,12 @@ function App() {
           const newMessages = [...messages, content];
           return newMessages.filter((message, index) => newMessages.indexOf(message) === index);
         });
+
+        setTimeout(() => {
+          if (messagesRef.current) {
+            messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+          }
+        }, 100);
       });
 
       setSoul(soul);
@@ -57,7 +58,22 @@ function App() {
     connectSoul();
   }, [soul]);
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "z") {
+        emitGameEvent("toggle-talking", null);
+      }
+    };
+
+    window.addEventListener("keyup", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keyup", handleKeyPress);
+    };
+  }, []);
+
   const handleTileClick = useCallback((x: number, y: number) => {
+    console.log("Tile clicked", x, y);
     setTileBeingEdited({ x, y });
   }, []);
 
@@ -66,9 +82,13 @@ function App() {
     emitGameEvent("cancel-add-object", null);
   }, []);
 
+  const handleAddedObject = useCallback(() => {
+    setTileBeingEdited(null);
+  }, []);
+
   const handleCanvasUpdate = useCallback(
     async (base64: string) => {
-      setMessages([]);
+      // setMessages([]);
 
       soul?.dispatch({
         action: "addObject",
@@ -84,15 +104,23 @@ function App() {
   return (
     <>
       <Text size="large">Milton is trapped in a room</Text>
-      <div className="app-content">
-        <GameContainer onTileClick={handleTileClick} onCanvasUpdate={handleCanvasUpdate} />
-        <UiContainer tileBeingEdited={tileBeingEdited} onCancel={handleCancel} />
+      <div style={{ display: "flex", gap: 20 }}>
+        <div className="app-content">
+          <UiContainer tileBeingEdited={tileBeingEdited} onCancel={handleCancel} onAddedObject={handleAddedObject} />
+          <GameContainer
+            onTileClick={handleTileClick}
+            onCanvasUpdate={handleCanvasUpdate}
+            isInteractive={!tileBeingEdited}
+          />
+        </div>
+        <div style={{ width: 512, height: 512, overflowY: "scroll", color: "#deb887" }} ref={messagesRef}>
+          {messages.map((message, index) => (
+            <Text key={index} size="large" style={{ marginBottom: "3rem" }}>
+              {message}
+            </Text>
+          ))}
+        </div>
       </div>
-      {messages.map((message, index) => (
-        <Text key={index} size="large">
-          {message}
-        </Text>
-      ))}
       {/* <Text size="large">{message}</Text> */}
     </>
   );
@@ -100,14 +128,16 @@ function App() {
 
 function UiContainer({
   tileBeingEdited,
+  onAddedObject,
   onCancel,
 }: {
   tileBeingEdited: { x: number; y: number } | null;
+  onAddedObject: () => void;
   onCancel: () => void;
 }) {
   const handleAddObject = (base64: string) => {
     emitGameEvent("add-base64-image", base64);
-    onCancel();
+    onAddedObject();
   };
 
   return <PixelEditor onAddObject={handleAddObject} onCancel={onCancel} isEditing={!!tileBeingEdited} />;

@@ -11,6 +11,7 @@ const GameContainer = memo(
   }: {
     onTileClick: (x: number, y: number) => void;
     onCanvasUpdate(base64: string): void;
+    isInteractive: boolean;
   }) => {
     useEffect(() => {
       console.log("GameContainer");
@@ -64,7 +65,12 @@ const GameContainer = memo(
           height: `${HEIGHT_SCREEN}px`,
         }}
       >
-        <div id="phaser-game" />
+        <div
+          id="phaser-game"
+          // style={{
+          //   pointerEvents: isInteractive ? "auto" : "none",
+          // }}
+        />
       </div>
     );
   }

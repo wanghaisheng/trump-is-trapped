@@ -11,6 +11,7 @@ import { Button } from "nes-ui-react";
 import { useEffect, useRef } from "react";
 import bucket from "./bucket.png";
 import pencil from "./pencil.png";
+import trash from "./trash.png";
 
 export default function PixelEditor({
   onAddObject,
@@ -80,23 +81,123 @@ export default function PixelEditor({
     <div
       style={{
         visibility: isEditing ? "visible" : "hidden",
+        position: "absolute",
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
       }}
     >
-      <div className="dotting-container">
-        <div className="dotting-canvas">
-          <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
+      <div
+        className="dotting-container"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#999999",
+              // padding: 8,
+              // paddingRight: 16,
+              width: "80px",
+              display: "flex",
+              // width: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+              border: "1px solid #555",
+              borderRight: "none",
+            }}
+          >
+            <div style={{ display: "flex" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                }}
+              >
+                {[
+                  "#FF0000",
+                  "#0000FF",
+                  "#00FF00",
+                  "#FF00FF",
+                  "#00FFFF",
+                  "#FFFF00",
+                  "#7c4700",
+                  "#101010",
+                  "#666666",
+                  "#FFFFFF",
+                ].map((color) => (
+                  <div
+                    key={color}
+                    style={{
+                      flexShrink: 0,
+                      display: "inline-block",
+                      width: 35,
+                      height: 35,
+                      padding: 3,
+                      paddingBottom: 1,
+                      border: brushColor === color ? "2px solid white" : "2px solid transparent",
+                    }}
+                  >
+                    <div
+                      onClick={changeBrushColor.bind(null, color)}
+                      style={{
+                        width: 25,
+                        height: 25,
+                        border: "2px solid white",
+                        backgroundColor: color,
+                        cursor: "var(--cursor-click-url),pointer",
+                        display: "inline-block",
+                        lineHeight: "20px",
+                      }}
+                    />
+                  </div>
+                ))}
+
+                {/* <div
+                  style={{
+                    border: brushTool === BrushTool.DOT ? "2px solid white" : "2px solid transparent",
+                    padding: "2px",
+                  }}
+                  onClick={() => {
+                    changeBrushTool(BrushTool.DOT);
+                  }}
+                >
+                  <img src={pencil} alt="pencil" style={{ width: "24px", height: "24px" }} />
+                </div>
+                <div
+                  style={{
+                    border: brushTool === BrushTool.PAINT_BUCKET ? "2px solid white" : "2px solid transparent",
+                    padding: "2px",
+                  }}
+                  onClick={() => {
+                    changeBrushTool(BrushTool.PAINT_BUCKET);
+                  }}
+                >
+                  <img src={bucket} alt="bucket" style={{ width: "24px", height: "24px" }} />
+                </div> */}
+              </div>
+            </div>
+          </div>
+
+          <div className="dotting-canvas">
+            <Dotting ref={ref} width="100%" height="100%" isGridFixed gridSquareLength={gridSquareLength}></Dotting>
+          </div>
         </div>
 
         <div
           style={{
-            backgroundColor: "#999999",
-            // padding: 8,
-            // paddingRight: 16,
-            padding: "8px 16px 8px 8px",
             display: "flex",
-            width: "100%",
-            justifyContent: "space-between",
             alignItems: "center",
+            justifyContent: "space-between",
+            padding: 12,
+            backgroundColor: "#999999",
           }}
         >
           <div
@@ -127,91 +228,52 @@ export default function PixelEditor({
             >
               <img src={bucket} alt="bucket" style={{ width: "48px", height: "48px" }} />
             </div>
+            <div
+              style={{
+                border: "2px solid transparent",
+                padding: "2px",
+              }}
+              onClick={() => {
+                reset(setData);
+              }}
+            >
+              <img src={trash} alt="trash" style={{ width: "48px", height: "48px" }} />
+            </div>
           </div>
 
           <div
             style={{
               display: "flex",
-              gap: 1,
+              justifyContent: "space-between",
+              padding: "0 10px",
+              gap: 16,
             }}
           >
-            {[
-              "#FF0000",
-              "#0000FF",
-              "#00FF00",
-              "#FF00FF",
-              "#00FFFF",
-              "#FFFF00",
-              "#7c4700",
-              "#101010",
-              "#666666",
-              "#FFFFFF",
-            ].map((color) => (
-              <div
-                key={color}
-                style={{
-                  flexShrink: 0,
-                  display: "inline-block",
-                  width: 35,
-                  height: 35,
-                  padding: 3,
-                  paddingBottom: 1,
-                  border: brushColor === color ? "2px solid white" : "2px solid transparent",
+            <div>
+              <Button
+                color="primary"
+                size="large"
+                onClick={async () => {
+                  const image = await convert(dataArray);
+                  onAddObject(image);
+                  reset(setData);
                 }}
               >
-                <div
-                  onClick={changeBrushColor.bind(null, color)}
-                  style={{
-                    width: 25,
-                    height: 25,
-                    border: "2px solid white",
-                    backgroundColor: color,
-                    cursor: "var(--cursor-click-url),pointer",
-                    display: "inline-block",
-                    lineHeight: "20px",
-                  }}
-                />
-              </div>
-            ))}
+                Add
+              </Button>
+            </div>
+            <div>
+              <Button
+                size="large"
+                onClick={() => {
+                  onCancel();
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <Button
-            color="primary"
-            size="large"
-            onClick={async () => {
-              const image = await convert(dataArray);
-              onAddObject(image);
-              reset(setData);
-            }}
-          >
-            Add object
-          </Button>
-          <Button
-            size="large"
-            onClick={() => {
-              reset(setData);
-            }}
-          >
-            Clear
-          </Button>
-        </div>
-        <Button
-          size="large"
-          onClick={() => {
-            onCancel();
-          }}
-        >
-          Cancel
-        </Button>
       </div>
     </div>
   );

@@ -163,11 +163,11 @@ const multiSpeak = async (workingMemory: WorkingMemory, pendingPerceptions: Perc
     );
 
     waitTime =
-      phraseLength === "very long" ? 6000 : phraseLength === "long" ? 4000 : phraseLength === "medium" ? 2000 : 1000;
+      phraseLength === "very long" ? 4000 : phraseLength === "long" ? 4000 : phraseLength === "medium" ? 2000 : 1000;
     log(`waiting for ${waitTime}ms`);
 
     const words =
-      (phraseLength === "very long" ? 60 : phraseLength === "long" ? 40 : phraseLength === "medium" ? 20 : 10) +
+      (phraseLength === "very long" ? 30 : phraseLength === "long" ? 30 : phraseLength === "medium" ? 20 : 10) +
       " words ";
 
     count -= 1;

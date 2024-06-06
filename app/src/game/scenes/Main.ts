@@ -12,6 +12,8 @@ export default class Main extends Phaser.Scene {
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private tiles: Phaser.GameObjects.Rectangle[] = [];
   private selectedTile: Phaser.GameObjects.Rectangle | null = null;
+  private mouth!: Phaser.GameObjects.Rectangle;
+  private isTalking: boolean = false;
 
   constructor() {
     super(key.scene.main);
@@ -24,8 +26,7 @@ export default class Main extends Phaser.Scene {
     const tilesetRooms = map.addTilesetImage("rooms", key.image.rooms)!;
     const allTilesets = [tilesetInteriors, tilesetRooms];
 
-    const layers = ["World"]; //, "World2", "Things", "Things2"];
-    // const layers = ["World", "World2", "Things", "Things2"];
+    const layers = ["World"];
     const allLayers = layers.map((layer) => map.createLayer(layer, allTilesets, 0, 0)!);
 
     allLayers.forEach((layer) => {
@@ -49,6 +50,9 @@ export default class Main extends Phaser.Scene {
       this.physics.add.collider(this.player, layer);
     });
 
+    this.mouth = this.add.rectangle(width / 2, height / 2 + 12, 2, 2, 0x333333);
+    this.mouth.setVisible(false);
+
     const platforms = this.physics.add.staticGroup();
     this.physics.add.collider(this.player, platforms);
 
@@ -62,6 +66,19 @@ export default class Main extends Phaser.Scene {
       this.tiles.forEach((tile) => {
         tile.setFillStyle(0xffffff, 0);
       });
+
+      this.selectedTile = null;
+    });
+
+    this.events.on("toggle-talking", () => {
+      this.isTalking = !this.isTalking;
+      if (this.isTalking) {
+        this.mouth.setVisible(true);
+        this.animateMouth();
+      } else {
+        this.tweens.killTweensOf(this.mouth); // Stop the animation
+        this.mouth.setVisible(false);
+      }
     });
 
     // this.events.on("player-says", (message: string) => {
@@ -113,6 +130,42 @@ export default class Main extends Phaser.Scene {
     this.createTiles();
   }
 
+  animateMouth() {
+    let state = 0;
+    // const initialY = this.mouth.y;
+    const createEvent = () => {
+      this.time.addEvent({
+        delay: Phaser.Math.Between(100, 400),
+        callback: () => {
+          if (!this.isTalking) {
+            return;
+          }
+          state = (state + 1) % 3;
+          switch (state) {
+            case 0:
+              this.mouth.setVisible(true);
+              this.mouth.setScale(1, 1);
+              // this.mouth.setY(initialY);
+              break;
+            case 1:
+              this.mouth.setVisible(true);
+              this.mouth.setScale(2, 1);
+              // this.mouth.setY(initialY);
+              break;
+            case 2:
+              this.mouth.setVisible(true);
+              this.mouth.setScale(2, 2);
+              // this.mouth.setY(initialY + 1);
+              break;
+          }
+          createEvent();
+        },
+        callbackScope: this,
+      });
+    };
+    createEvent();
+  }
+
   createTiles() {
     const tileSize = 32;
     const stepSize = tileSize / 2;
@@ -132,19 +185,19 @@ export default class Main extends Phaser.Scene {
           )
           .setInteractive();
 
-        // tile.on("pointerover", () => {
-        //   if (this.selectedTile) {
-        //     return;
-        //   }
+        tile.on("pointerover", () => {
+          if (this.selectedTile) {
+            return;
+          }
 
-        //   tile.setFillStyle(0xffffff, 0.2);
-        // });
+          tile.setFillStyle(0xffffff, 0.2);
+        });
 
-        // tile.on("pointerout", () => {
-        //   if (this.selectedTile !== tile) {
-        //     tile.setFillStyle(0xffffff, 0);
-        //   }
-        // });
+        tile.on("pointerout", () => {
+          if (this.selectedTile !== tile) {
+            tile.setFillStyle(0xffffff, 0);
+          }
+        });
 
         tile.on("pointerdown", () => {
           this.resetTileHighlights();
@@ -152,6 +205,7 @@ export default class Main extends Phaser.Scene {
           const onTileClick = this.game.registry.get("onTileClick");
           if (onTileClick) {
             onTileClick(x, y); // Invoke the callback with the tile coordinates
+
             this.selectedTile = tile;
             tile.setFillStyle(0xddddff, 0.4);
           }

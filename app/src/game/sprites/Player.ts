@@ -172,6 +172,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   returnToCenter() {
     this.isReturning = true; // Set the flag to true when starting to return
 
+    const directionX = this.originalPosition.x - this.x;
+
     this.scene.tweens.add({
       targets: this,
       x: { value: this.originalPosition.x, duration: 3000, ease: "Power1" },
@@ -181,6 +183,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.anims.stop();
         const idleFrame = "player-idle-south.000";
         this.setTexture(key.atlas.player, idleFrame);
+
+        const random = Math.floor(Math.random() * (2000 - 1000 + 1)) + 2000;
+
+        setTimeout(() => {
+          let animationKey;
+          animationKey = directionX > 0 ? "player-walk-east.000" : "player-walk-west.000";
+
+          this.setTexture(key.atlas.player, animationKey);
+
+          setTimeout(() => {
+            this.setTexture(key.atlas.player, "player-idle-south.000");
+          }, random);
+        }, 4000 - random);
       },
     });
   }
