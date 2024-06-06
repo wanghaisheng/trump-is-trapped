@@ -13,3 +13,8 @@ This is an exploration of digital life inhabiting interactive environments.
 1. Run the app - `cd` into `app` and run `npm i && npm run dev`
 1. Configure the voice app by creating `voice/.env` (using `env.sample` as a reference)
 1. Run the voice app - `cd` into `voice` and run `bun i && bun ./src/index.ts`
+
+## Assets used in the game
+
+- Room: https://limezu.itch.io/ (Modern interiors)
+- Character: https://rcpstd.itch.io/ (Interior Tileset Asset Pack)
