@@ -1,6 +1,12 @@
 # Milton - A sandbox for digital life trapped in a room
 
-This is an exploration of digital life inhabiting interactive environments.
+## MILTON IS LIVE NOW!
+
+You can play it here: https://souls.chat/s/opensouls/milton-is-trapped
+
+## About Milton
+
+Milton is trapped in a room is an exploration of digital life inhabiting interactive environments.
 
 ![](milton.png)
 
